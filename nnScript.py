@@ -4,10 +4,26 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.io import loadmat
 from math import sqrt
+from math import exp
+
+
+
+# ============ Configurable parameters ============ #
+
+# Percentage of training-data that we'll use for validation
+validation_data_percentage = 99 
+
+# No. of nodes in the HIDDEN layer (not including bias unit)
+n_hidden = 50;
+
+# Lambda (the regularization hyper-parameter)
+lambdaval = 0;
+
+
 
 def preprocess():
     
-    print "..:: Execution begins ::.."
+    print "\n..:: Execution begins ::.."
     """ Input:
      Although this function doesn't have any input, you are required to load
      the MNIST data set from file 'mnist_all.mat'.
@@ -31,77 +47,99 @@ def preprocess():
            with corresponding labels
      - convert original data set from integer to double by using double()
            function
-     - normalize the data to [0, 1]
+     - normalize the data to [0, 1]   ??????????????????
      - feature selection """
-    
-    
-    # Pick a reasonable size for validation data
-    # ==== Percentage of data that will make the validation part === #
-    validation_data_percentage = 99
-    
-    # Initialize the arrays to be returned
-    #train_data = np.array([])
-    train_label = np.array([])
-    validation_data = np.array([])
-    validation_label = np.array([])
-    test_data = np.array([])
-    test_label = np.array([])
     
     
     # Load the MAT object as a Dictionary
     mat = loadmat('/home/ankitkap/machinelearning/basecode/mnist_all.mat')
-    training_data_size = 0
     is_first_run = True
         
     # For each digit
     for i in range(0,10):
-        # digit_matrix - is a matrix in which each row is a training example,
-        # and each column is a pixel of an example. So its dimensions are 
-        # N x 784 where N is the number of training examples for that digit, 
-        # and 784 because the number of pixels is 28x28
-        digit_matrix = mat.get('train'+str(i))
         
-        # How many examples are present in the data for this digit?
-        num_of_examples = digit_matrix.shape[0]
+        # training_matrix - each row is a training example, each column is a 
+        # pixel. Size: N x 784 where N is the number of training examples
+        training_matrix = mat.get('train'+str(i))
+        # test_matrix - size T x 784, where T is number of test data elements
+        test_matrix = mat.get('test'+str(i))
+          
+        
+        # =========== Create test-data matrix =========== #
+        
+        # How many test data elements are present in the data for this digit?
+        test_data_count = test_matrix.shape[0]
+        
+        # Make an array of repeated labels like [9,9,9,9,...]
+        repeated_labels_testdata = np.repeat(np.array([i]), test_data_count, 0)
+                
+        if is_first_run:
+            # Create test-data matrix and label vector
+            test_data = np.array(test_matrix)
+            test_label = repeated_labels_testdata
+        else:
+            # Append to the test-data matrix and label vector
+            test_data = np.append(test_data, test_matrix, 0)
+            test_label = np.append(test_label, repeated_labels_testdata, 0) 
+        
+        
+        
+        # =========== Create training & validation matrices =========== #
+        
+        # How many training examples are present in the data for this digit?
+        num_of_examples = training_matrix.shape[0]
         # How many of the given examples will be used for validation
         validation_size = round(num_of_examples * float(validation_data_percentage / 100))
         training_size = num_of_examples - validation_size
         
-        # Split the data for this digit into a validation and a training part
-        random_range = range(digit_matrix.shape[0])
+        # Randomly split the data into a validation and a training part
+        random_range = range(training_matrix.shape[0])
         perm = np.random.permutation(random_range)
+        validation_part = training_matrix[perm[0:validation_size],:]
+        training_part = training_matrix[perm[validation_size:],:]
         
-        validation_part = digit_matrix[perm[0:validation_size],:]
-        training_part = digit_matrix[perm[validation_size:],:]
-        
-        # Make a array of repeated labels like [9,9,9,9,...]
+        # Make an array of repeated labels like [9,9,9,9,...]
         repeated_labels_train = np.repeat(np.array([i]), training_size, 0)
         repeated_labels_valid = np.repeat(np.array([i]), validation_size, 0)
         
         if is_first_run:
+            # Create training-data matrix and label vector
             train_data = np.array(training_part)
             train_label = repeated_labels_train
+            # Create validation-data matrix and label vector
+            validation_data = np.array(validation_part)
             validation_label = repeated_labels_valid
-            is_first_run = False
         else:
+            # Append to the training-data matrix and label vector
             train_data = np.append(train_data, training_part, 0)
             train_label = np.append(train_label, repeated_labels_train, 0)
-            validation_label = np.append(train_label, repeated_labels_valid, 0)
+            # Append to the validation-data matrix and label vector
+            validation_data = np.append(validation_data, validation_part, 0)
+            validation_label = np.append(validation_label, repeated_labels_valid, 0)
+         
+        # Not the first run anymore
+        is_first_run = False        
                 
-        # ---- What does 'shape' do? The shape attribute for numpy arrays returns the dimensions of the array. 
-        # ---- If Y has n rows and m columns, then Y.shape is (n,m). So Y.shape[0] is n.
-#        print "\nm.shape[0]: %s" % digit_matrix.shape[0]
-#       print "m.shape[1]: %s" % digit_matrix.shape[1]
-        training_data_size += digit_matrix.shape[0]
+    '''print train_data.shape
+    print train_label.shape          
+    print validation_data.shape
+    print validation_label.shape
+    print test_data.shape
+    print test_label.shape'''
     
-    print train_data
-    print train_data.shape
-    print train_label
-    print train_label.shape
+    # Perform feature-selection on all 3 of the matrics
+    train_data = doFeatureSelection(train_data)
+    validation_data = doFeatureSelection(validation_data)
+    test_data = doFeatureSelection(test_data)
     
     return train_data, train_label, validation_data, validation_label, test_data, test_label
     
     
+# TODO: Implement this
+def doFeatureSelection(matrix):
+    # Also, convert each value to the double data-type here
+    return matrix
+
 
 def initializeWeights(n_in,n_out):
     """
@@ -126,7 +164,28 @@ def sigmoid(z):
     """# Notice that z can be a scalar, a vector or a matrix
     # return the sigmoid of input z"""
     
-    return  #your code here
+    print isinstance(z,np.ndarray)
+    if isinstance(z,np.ndarray):
+        if len(z.shape) is 1:
+            size = z.shape[0]
+            for i in range(size):
+                z[i] = calculateSigmoid(z[i])
+
+        if len(z.shape) is 2:
+            rows = z.shape[0]
+            cols = z.shape[1]
+            for i in range(rows):
+                for j in range(cols):
+                    z[i][j] = calculateSigmoid(z[i][j])
+    else:
+        z = calculateSigmoid(z)
+    
+    
+    return z
+    
+def calculateSigmoid(x):
+    exponent = exp(-1.0 * x)
+    return 1.0 / float(1.0 + exponent)
     
         
 
@@ -220,12 +279,6 @@ def nnPredict(w1,w2,data):
 
 """**************Neural Network Script Starts here********************************"""
 
-# ====== Parameters to be experimented with ======
-# set the number of nodes in hidden unit (not including bias unit)
-n_hidden = 50;
-# set the regularization hyper-parameter
-lambdaval = 0;
-
 train_data, train_label, validation_data,validation_label, test_data, test_label = preprocess();
 
 
@@ -284,3 +337,17 @@ print('\n Validation set Accuracy:' + str(100*np.mean((predicted_label == valida
 #find the accuracy on the TEST Dataset
 predicted_label = nnPredict(w1,w2,test_data)
 print('\n Test set Accuracy:' + + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
+
+
+
+
+
+
+
+
+
+
+
+# ---- What does 'shape' do? The shape attribute for numpy arrays returns the dimensions of the array. 
+# ---- If Y has n rows and m columns, then Y.shape is (n,m). So Y.shape[0] is n.
+
