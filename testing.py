@@ -34,3 +34,5 @@ matrix = np.array([[0,1,2,5],[0,5,2,8],[0,5,4,9], [0,5,2,1], [0,6,8,3]])
 print matrix, "\n"
 
 print "Result:\n", doFeatureSelection(matrix)
+
+print "harwani"
