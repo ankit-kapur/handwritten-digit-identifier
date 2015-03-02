@@ -5,7 +5,7 @@ from scipy.optimize import minimize
 from scipy.io import loadmat
 from math import sqrt
 from math import exp
-
+from math import isnan
 
 
 # ============ Configurable parameters ============ #
@@ -71,7 +71,7 @@ def preprocess():
         
         # Make an array of repeated labels like [9,9,9,9,...]
         label_vector = generateLabelVector(i)
-        repeated_labels_testdata = np.repeat(label_vector, test_data_count, 0)
+        repeated_labels_testdata = np.tile(label_vector, (test_data_count,1))
                 
         if is_first_run:
             # Create test-data matrix and label vector
@@ -100,8 +100,8 @@ def preprocess():
         
         # Make an array of repeated labels like [9,9,9,9,...]
         label_vector = generateLabelVector(i)
-        repeated_labels_train = np.repeat(label_vector, training_size, 0)
-        repeated_labels_valid = np.repeat(label_vector, validation_size, 0)
+        repeated_labels_train = np.tile(label_vector, (training_size,1))
+        repeated_labels_valid = np.tile(label_vector, (validation_size,1))
         
         if is_first_run:
             # Create training-data matrix and label vector
@@ -210,14 +210,16 @@ def sigmoid(z):
     else:
         z = calculateSigmoid(z)
     
-    
+    if isnan(z):
+        print z
+        
     return z
     
 def calculateSigmoid(x):
-    exponent = exp(-1.0 * x)
-    return 1.0 / float(1.0 + exponent)
-    
-        
+    exponent = round(exp(-1.0 * round(x, 5)), 5)
+    if isnan(exponent):
+        print "x: ", x
+    return 1.0 / (1.0 + exponent)
 
 def nnObjFunction(params, *args):
     """% nnObjFunction computes the value of objective function (negative log 
@@ -290,7 +292,7 @@ def nnObjFunction(params, *args):
         for j in range(m):
             Wji = w1[j]
             
-            zj = np.array([0])         
+            zj = np.array([0.0])         
             for h in range(d):
                 zj[0] += sigmoid(Wji[h] * x[h])
             z = np.append(z, zj, 0)
@@ -300,9 +302,9 @@ def nnObjFunction(params, *args):
         for l in range(k):
             Wlj = w2[l]
             
-            oj = 0
+            oj = np.array([0.0])
             for j in range(m):
-                oj += sigmoid(Wlj[j] * z[j])
+                oj[0] += sigmoid(Wlj[j] * z[j])
             o = np.append(o, oj, 0)
             
             
@@ -312,12 +314,15 @@ def nnObjFunction(params, *args):
             y_il = y[l]
             o_il = o[l]
             
+            ############################### ln (0) = ???????
             ln_1 = np.log(o_il)
             ln_2 = np.log(1-o_il)
             
             Ji += (y_il * ln_1) + ((1 - y_il) * ln_2)
 
         J += (-1 * Ji)
+        
+        # ============= remove break when running on metallica
         break    
         
     J = (1/n) * J
