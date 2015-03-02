@@ -54,15 +54,15 @@ def preprocess():
     # Load the MAT object as a Dictionary
     mat = loadmat('/home/harsh/canopy/ML/mnist_all.mat')
     is_first_run = True
-        
+    training_matrix = mat.get('train'+str(i))
     # For each digit
     for i in range(0,10):
         
         # training_matrix - each row is a training example, each column is a 
         # pixel. Size: N x 784 where N is the number of training examples
-        training_matrix = mat.get('train'+str(i))
+        training_matrix = np.divide(mat.get('train'+str(i)),255.0)
         # test_matrix - size T x 784, where T is number of test data elements
-        test_matrix = mat.get('test'+str(i))
+        test_matrix = np.divide(mat.get('test'+str(i)),255.0)
           
         
         # =========== Create test-data matrix =========== #
