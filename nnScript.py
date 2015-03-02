@@ -52,10 +52,9 @@ def preprocess():
     
     
     # Load the MAT object as a Dictionary
-    mat = loadmat('/home/harsh/canopy/ML/mnist_all.mat')
+    mat = loadmat('/home/ankitkap/machinelearning/basecode/mnist_all.mat')
     is_first_run = True
-    training_matrix = mat.get('train'+str(i))
-    # For each digit
+
     for i in range(0,10):
         
         # training_matrix - each row is a training example, each column is a 
@@ -71,7 +70,8 @@ def preprocess():
         test_data_count = test_matrix.shape[0]
         
         # Make an array of repeated labels like [9,9,9,9,...]
-        repeated_labels_testdata = np.repeat(np.array([i]), test_data_count, 0)
+        label_vector = generateLabelVector(i)
+        repeated_labels_testdata = np.repeat(label_vector, test_data_count, 0)
                 
         if is_first_run:
             # Create test-data matrix and label vector
@@ -99,8 +99,9 @@ def preprocess():
         training_part = training_matrix[perm[validation_size:],:]
         
         # Make an array of repeated labels like [9,9,9,9,...]
-        repeated_labels_train = np.repeat(np.array([i]), training_size, 0)
-        repeated_labels_valid = np.repeat(np.array([i]), validation_size, 0)
+        label_vector = generateLabelVector(i)
+        repeated_labels_train = np.repeat(label_vector, training_size, 0)
+        repeated_labels_valid = np.repeat(label_vector, validation_size, 0)
         
         if is_first_run:
             # Create training-data matrix and label vector
@@ -128,15 +129,18 @@ def preprocess():
     print(test_label.shape)
     
     # Perform feature-selection on all 3 of the matrics
-    print("dimensions1",train_data.shape)
+    initial_features = train_data.shape[1]
     train_data = doFeatureSelection(train_data)
     validation_data = doFeatureSelection(validation_data)
     test_data = doFeatureSelection(test_data)
     
-    print("dimensions2",train_data.shape)
+    print("Features removed: ",initial_features-train_data.shape[1])
     return train_data, train_label, validation_data, validation_label, test_data, test_label
     
-    
+def generateLabelVector(x):
+    vector = np.repeat(np.array([0]), 10, 0)
+    vector[x] = 1
+    return vector
 
 def doFeatureSelection(matrix):
     # Also, convert each value to the double data-type here
@@ -255,22 +259,75 @@ def nnObjFunction(params, *args):
     
     n_input, n_hidden, n_class, training_data, training_label, lambdaval = args
     
+    # n is the number of training examples
+    n = training_data.shape[0]
+    
     w1 = params[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
     w2 = params[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
     obj_val = 0  
     
     #Your code here
-    #
-    #
-    #
-    #
-    #
     
+    # We use d, m, k for notations
+    d = n_input
+    m = n_hidden
+    k = n_class
+            
+    # Initializing J
+    J = 0.0
     
+    for i in range(n):
+        
+        #===== Finding J[i] =====#
     
-    #Make sure you reshape the gradient matrices to a 1D array. for instance if your gradient matrices are grad_w1 and grad_w2
-    #you would use code similar to the one below to create a flat array
-    #obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
+        # Get training example, and it's true label
+        # x is a vector of size d+1, and y is a vector of size k
+        x = training_data[i]
+        y = training_label[i]
+                                
+        #=== Calculating z ===#
+        z = np.empty([m])
+        for j in range(m):
+            Wji = w1[j]
+            
+            zj = np.array([0])         
+            for h in range(d):
+                zj[0] += sigmoid(Wji[h] * x[h])
+            z = np.append(z, zj, 0)
+                
+        #=== Calculating o ===#
+        o = np.empty([k])
+        for l in range(k):
+            Wlj = w2[l]
+            
+            oj = 0
+            for j in range(m):
+                oj += sigmoid(Wlj[j] * z[j])
+            o = np.append(o, oj, 0)
+            
+            
+        #=== Calculating Ji(w1, w2)
+        Ji = 0.0
+        for l in range(k):
+            y_il = y[l]
+            o_il = o[l]
+            
+            ln_1 = np.log(o_il)
+            ln_2 = np.log(1-o_il)
+            
+            Ji += (y_il * ln_1) + ((1 - y_il) * ln_2)
+
+        J += (-1 * Ji)
+        break    
+        
+    J = (1/n) * J
+    
+    print "J: ", J
+    
+    # Make sure you reshape the gradient matrices to a 1D array. for instance 
+    # if your gradient matrices are grad_w1 and grad_w2
+    # you would use code similar to the one below to create a flat array
+    # obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     obj_grad = np.array([])
     
     return (obj_val,obj_grad)
@@ -333,7 +390,7 @@ initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
 args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
 opts = {'maxiter' : 50}    # Max-iterations: preferred value
 
-#nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
+nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
 
 # In case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
 # and nnObjGradient. Check documentation for this function before you proceed.
