@@ -52,7 +52,7 @@ def preprocess():
     
     
     # Load the MAT object as a Dictionary
-    mat = loadmat('/home/ankitkap/machinelearning/basecode/mnist_all.mat')
+    mat = loadmat('/home/harsh/canopy/ML/mnist_all.mat')
     is_first_run = True
         
     # For each digit
@@ -372,4 +372,4 @@ print('\n Test set Accuracy:' + + str(100*np.mean((predicted_label == test_label
 
 # ---- What does 'shape' do? The shape attribute for numpy arrays returns the dimensions of the array. 
 # ---- If Y has n rows and m columns, then Y.shape is (n,m). So Y.shape[0] is n.
-
+print "First test"
