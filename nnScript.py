@@ -135,10 +135,35 @@ def preprocess():
     return train_data, train_label, validation_data, validation_label, test_data, test_label
     
     
-# TODO: Implement this
+
 def doFeatureSelection(matrix):
     # Also, convert each value to the double data-type here
-    return matrix
+    n_rows = matrix.shape[0]
+    n_cols = matrix.shape[1]
+    is_first_run = True
+    newmatrix = np.empty([2,2])
+    
+    for i in range(n_cols):
+         
+        col_flag = False
+        temp = matrix[0][i]
+        
+        for j in range(1, n_rows):
+            if matrix[j][i] != temp:
+                col_flag = True
+                break
+        if col_flag is True:
+            if is_first_run is True:
+                newmatrix = np.array([matrix[:, i]]) #create matrix 
+                newmatrix = np.reshape(newmatrix, (n_rows, -1))
+                
+                is_first_run = False;
+            else:
+                tempmatrix = np.reshape(np.array([matrix[:, i].T]), (n_rows,-1))
+                newmatrix = np.append(newmatrix, tempmatrix, 1)
+    
+    return newmatrix
+
 
 
 def initializeWeights(n_in,n_out):
@@ -164,7 +189,6 @@ def sigmoid(z):
     """# Notice that z can be a scalar, a vector or a matrix
     # return the sigmoid of input z"""
     
-    print isinstance(z,np.ndarray)
     if isinstance(z,np.ndarray):
         if len(z.shape) is 1:
             size = z.shape[0]
