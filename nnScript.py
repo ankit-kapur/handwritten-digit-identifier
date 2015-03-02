@@ -11,7 +11,7 @@ from math import exp
 # ============ Configurable parameters ============ #
 
 # Percentage of training-data that we'll use for validation
-validation_data_percentage = 99 
+validation_data_percentage = 0 
 
 # No. of nodes in the HIDDEN layer (not including bias unit)
 n_hidden = 50;
@@ -23,7 +23,7 @@ lambdaval = 0;
 
 def preprocess():
     
-    print "\n..:: Execution begins ::.."
+    print("\n..:: Execution begins ::..")
     """ Input:
      Although this function doesn't have any input, you are required to load
      the MNIST data set from file 'mnist_all.mat'.
@@ -120,18 +120,20 @@ def preprocess():
         # Not the first run anymore
         is_first_run = False        
                 
-    print train_data.shape
-    print train_label.shape          
-    print validation_data.shape
-    print validation_label.shape
-    print test_data.shape
-    print test_label.shape
+    print(train_data.shape)
+    print(train_label.shape)          
+    print(validation_data.shape)
+    print(validation_label.shape)
+    print(test_data.shape)
+    print(test_label.shape)
     
     # Perform feature-selection on all 3 of the matrics
+    print("dimensions1",train_data.shape)
     train_data = doFeatureSelection(train_data)
     validation_data = doFeatureSelection(validation_data)
     test_data = doFeatureSelection(test_data)
     
+    print("dimensions2",train_data.shape)
     return train_data, train_label, validation_data, validation_label, test_data, test_label
     
     
@@ -141,27 +143,27 @@ def doFeatureSelection(matrix):
     n_rows = matrix.shape[0]
     n_cols = matrix.shape[1]
     is_first_run = True
-    newmatrix = np.empty([2,2])
-    
-    for i in range(n_cols):
-         
-        col_flag = False
-        temp = matrix[0][i]
+    newmatrix = matrix
+    if matrix.shape[0]!=0:
+        for i in range(n_cols):
+            
+            col_flag = False
+            temp = matrix[0][i]
+            
+            for j in range(1, n_rows):
+                if matrix[j][i] != temp:
+                    col_flag = True
+                    break
+            if col_flag is True:
+                if is_first_run is True:
+                    newmatrix = np.array([matrix[:, i]]) #create matrix 
+                    newmatrix = np.reshape(newmatrix, (n_rows, -1))
+                    
+                    is_first_run = False;
+                else:
+                    tempmatrix = np.reshape(np.array([matrix[:, i].T]), (n_rows,-1))
+                    newmatrix = np.append(newmatrix, tempmatrix, 1)
         
-        for j in range(1, n_rows):
-            if matrix[j][i] != temp:
-                col_flag = True
-                break
-        if col_flag is True:
-            if is_first_run is True:
-                newmatrix = np.array([matrix[:, i]]) #create matrix 
-                newmatrix = np.reshape(newmatrix, (n_rows, -1))
-                
-                is_first_run = False;
-            else:
-                tempmatrix = np.reshape(np.array([matrix[:, i].T]), (n_rows,-1))
-                newmatrix = np.append(newmatrix, tempmatrix, 1)
-    
     return newmatrix
 
 
@@ -302,10 +304,11 @@ def nnPredict(w1,w2,data):
 
 
 """**************Neural Network Script Starts here********************************"""
-
+import time
+start_time = time.time()
 train_data, train_label, validation_data,validation_label, test_data, test_label = preprocess();
-
-
+print("train_data",train_data)
+print("Time for execution--> in seconds",time.time() - start_time)
 
 # ====== Train Neural Network ======
 
@@ -330,7 +333,7 @@ initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
 args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
 opts = {'maxiter' : 50}    # Max-iterations: preferred value
 
-nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
+#nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
 
 # In case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
 # and nnObjGradient. Check documentation for this function before you proceed.
@@ -340,8 +343,8 @@ nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='
 
 #====== We now have the trained weights ======
 # Reshape nnParams from 1D vector into w1 and w2 matrices
-w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
-w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+#w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
+#w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
 
 
 
@@ -349,7 +352,7 @@ w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
 #====== Test the computed parameters ======
 
 # Find the accuracy on the TRAINING Dataset
-predicted_label = nnPredict(w1,w2,train_data)
+'''predicted_label = nnPredict(w1,w2,train_data)
 print('\n Training set Accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
 
 # Find the accuracy on the VALIDATION Dataset
@@ -372,4 +375,4 @@ print('\n Test set Accuracy:' + + str(100*np.mean((predicted_label == test_label
 
 # ---- What does 'shape' do? The shape attribute for numpy arrays returns the dimensions of the array. 
 # ---- If Y has n rows and m columns, then Y.shape is (n,m). So Y.shape[0] is n.
-print "First test"
+print "First test"'''
