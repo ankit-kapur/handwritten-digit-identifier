@@ -93,7 +93,7 @@ def preprocess():
         training_size = num_of_examples - validation_size
         
         # Randomly split the data into a validation and a training part
-        random_range = range(training_matrix.shape[0])
+        random_range = range(num_of_examples)
         perm = np.random.permutation(random_range)
         validation_part = training_matrix[perm[0:validation_size],:]
         training_part = training_matrix[perm[validation_size:],:]
@@ -120,12 +120,12 @@ def preprocess():
         # Not the first run anymore
         is_first_run = False        
                 
-    '''print train_data.shape
+    print train_data.shape
     print train_label.shape          
     print validation_data.shape
     print validation_label.shape
     print test_data.shape
-    print test_label.shape'''
+    print test_label.shape
     
     # Perform feature-selection on all 3 of the matrics
     train_data = doFeatureSelection(train_data)
@@ -287,8 +287,6 @@ train_data, train_label, validation_data,validation_label, test_data, test_label
 
 # set the number of nodes in the input layer (not including bias unit)
 n_input = train_data.shape[1];
-# ---- What does 'shape' do? The shape attribute for numpy arrays returns the dimensions of the array. 
-# ---- If Y has n rows and m columns, then Y.shape is (n,m). So Y.shape[0] is n.
 				   
 # Number of nodes in the output layer are fixed as 10, because we've got 10 digits
 n_class = 10;
