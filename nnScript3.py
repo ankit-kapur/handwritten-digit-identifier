@@ -28,7 +28,7 @@ n_hidden = 50;
 # Lambda (the regularization hyper-parameter)
 lambdaval = 0;
 
-
+run_count = 0
 
 def preprocess():
     
@@ -235,11 +235,12 @@ def sigmoid(z):
 def calculateSigmoid(x):
     exponent = exp(-1.0*x)
     result = 1.0 / (1.0 + exponent)
-    print "x:", x, " exponent: ", exponent, " result:", result
+    #print "x:", x, " exponent: ", exponent, " result:", result
     return result
 
 
 def nnObjFunction(params, *args):
+    print("\n--------------------START - nnObjFunction------------------")
     """% nnObjFunction computes the value of objective function (negative log 
     %   likelihood error function with regularization) given the parameters 
     %   of Neural Networks, thetraining data, their corresponding training 
@@ -279,68 +280,83 @@ def nnObjFunction(params, *args):
     
     n_input, n_hidden, n_class, training_data, training_label, lambdaval = args
     
+    print "training_data,shape ", training_data.shape
+    print "training_label.shape ", training_label.shape
+     
     w1 = params[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
     w2 = params[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+    print "w1.shape", w1.shape
+    print "w2.shape", w2.shape
     obj_val = 0  
     
     #Your code here
-    #grad_w2 = output x hidden
-    #grad_w1 = output x hidden 
-    grad_w1 = np.zeros((n_hidden, n_input)) #initialize to 0  
-    grad_w2 = np.zeros((n_class, n_hidden)) #initialize to 0
-    print "grad_w1.shape",  grad_w1.shape
-    print "grad_w2.shape",  grad_w2.shape
-    
-    obj_val = 0
     
     w1_trans = np.transpose(w1)
     w2_trans = np.transpose(w2)
-    print "w1_trans.shape, w2_trans.shape", w1_trans.shape, w2_trans.shape
+    print "w1_trans.shape", w1_trans.shape
+    print "w2_trans.shape", w2_trans.shape
+    
     n_examples = training_data.shape[0]
     print n_examples 
+    
+    #grad_w2 = output x hidden
+    #grad_w1 = output x hidden 
+    grad_w1 = np.zeros((n_hidden + 1, n_input + 1)) #initialize to 0  
+    grad_w2 = np.zeros((n_class, n_hidden + 1)) #initialize to 0
+    print "grad_w1.shape",  grad_w1.shape
+    print "grad_w2.shape",  grad_w2.shape
     
      
     for i in range(n_examples):
         #x = 1 x input
         x = training_data[i]
-        #print "x[",i, "].shape", x.shape
+        x_bias = np.append(x, 1) # append bias = 1
+        #print "x_bias.shape", x_bias.shape
         #a = 1 x hidden
-        a = np.dot(x, w1_trans)
+        a = np.dot(x_bias, w1_trans)
         #print "a.shape", a.shape
         #z = 1 x hidden
         z = sigmoid(a)
-        #print "z.shape", z.shape
+        z_bias = np.append(z, 1) #append bias = 1
+        
+        #print "z_bias.shape", z_bias.shape
         #b = 1 x output
-        b = np.dot(z, w2_trans)
+        b = np.dot(z_bias, w2_trans)
+        #print "b.shape", b.shape
         #o = 1 x output
         o = sigmoid(b)
+        #print "o.shape", o.shape
         #y = 1 x output
         y = training_label[i]
+        #print "y.shape", y.shape
         #delta = 1 x output
         
         #-----calculation for obj_grad-----
         delta = np.subtract(o, y)
         delta_trans = np.transpose(delta) 
+        #print "delta_trans.shape", delta_trans.shape
         #^just for representation.
         #transpose does nothing to a (1 x something) array
         #so we have to use np.outer later, not np.dot
         
         #grad_w2 = output x hidden
-        grad_w2 = np.add(grad_w2, (np.outer(delta_trans, z)))
+        grad_w2 = np.add(grad_w2, (np.outer(delta_trans, z_bias)))
         
         #calculating [(1-z)*z * summation(delta*w2)] dot [x]
         #prodz = 1 x hidden
-        minusz = np.subtract(1.0, z)
-        prodz = z*minusz
+        minusz = np.subtract(1.0, z_bias)
+        prodz = z_bias*minusz
         
         summation = np.dot(delta, w2)
         
         prodzXsummation = summation*prodz
-        prodzXsummation_trans = np.trans(prodzXsummation) 
+        prodzXsummation_trans = np.transpose(prodzXsummation) 
         #^this also does nothing
         
         #grad_w1 = hidden x input
-        grad_w1 = np.add(grad_w1,(np.outer(prodzXsummation_trans, x)))
+        
+        grad_w1 = np.add(grad_w1,(np.outer(prodzXsummation_trans, x_bias)))
+        
         
         #-----calculation for obj_value-----
         
@@ -348,19 +364,40 @@ def nnObjFunction(params, *args):
         minuso = np.subtract(1.0, o)
         logminuso = np.log(minuso)
         minusy = np.subtract(1.0, y)
+        print "o.shape", o.shape
+        print "y.shape", y.shape
+        print "minusy.shape", minusy.shape
+        print "logo.shape", logo.shape
+        print "minuso.shape", minuso.shape
+        print "logminuso.shape", logminuso.shape
         
         j = y*logo + minusy*logminuso
+        jsum = np.sum(j)
         
-        obj_val += j
+        obj_val += jsum
+        
+        break
+        
                  
     # Make sure you reshape the gradient matrices to a 1D array. for instance 
     # if your gradient matrices are grad_w1 and grad_w2
     # you would use code similar to the one below to create a flat array
     # obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     #obj_grad = np.array([])
+  
     
+    obj_val = (obj_val/n_input)*-1  
     obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
-         
+    print "obj_grad", obj_grad
+    print "obj_val",  obj_val
+    
+    global run_count 
+    run_count += 1
+    print "run_count", run_count
+    
+    print("\n--------------------END - nnObjFunction------------------")
+    
+              
     return (obj_val,obj_grad)
 
 
@@ -395,6 +432,7 @@ def nnPredict(w1,w2,data):
 train_data, train_label, validation_data,validation_label, test_data, test_label = preprocess();
 
 # ====== Train Neural Network ======
+run_count = 0
 
 # set the number of nodes in the input layer (not including bias unit)
 n_input = train_data.shape[1];
