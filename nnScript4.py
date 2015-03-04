@@ -63,7 +63,7 @@ def preprocess():
     
     
     # Load the MAT object as a Dictionary
-    mat = loadmat('/home/harishankar/Workspace/Python/ML/mnist_all.mat')
+    mat = loadmat('/home/harsh/canopy/ML/mnist_all.mat')
     is_first_run = True
 
     for i in range(0,10):
@@ -283,8 +283,8 @@ def nnObjFunction(params, *args):
     print "training_data,shape ", training_data.shape
     print "training_label.shape ", training_label.shape
      
-    w1 = params[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
-    w2 = params[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+    w1 = params[0:n_hidden+1 * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
+    w2 = params[(n_hidden+1 * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
     print "w1.shape", w1.shape
     print "w2.shape", w2.shape
     obj_val = 0  
@@ -311,19 +311,20 @@ def nnObjFunction(params, *args):
         #x = 1 x input
         x = training_data[i]
         x = np.append(x, 1) # append bias = 1
-        
+       # x_trans=x.reshape(x.size,1)
         #print "x_bias.shape", x_bias.shape
         #a = 1 x hidden
         #print "a.shape", a.shape
         #z = 1 x hidden
         z = sigmoid(np.dot(x, w1_trans))
-        z = np.append(z, 1) #append bias = 1
-        
+      #  z = np.append(z, 1)
+        #append bias = 1
+        z_trans=z.reshape(1,z.size)
         #print "z_bias.shape", z_bias.shape
         #b = 1 x output
         #print "b.shape", b.shape
         #o = 1 x output
-        o = sigmoid(np.dot(z, w2_trans))
+        o = sigmoid(np.dot(z_trans, w2_trans))
         #print "o.shape", o.shape
         #y = 1 x output
         y = training_label[i]
@@ -332,25 +333,26 @@ def nnObjFunction(params, *args):
         
         #-----calculation for obj_grad-----
         delta = np.subtract(o, y)
-        delta_trans = np.transpose(delta) 
+        #delta_trans = np.transpose(delta)
+        delta_trans=delta.reshape(delta.size,1)
         #print "delta_trans.shape", delta_trans.shape
         #^just for representation.
         #transpose does nothing to a (1 x something) array
         #so we have to use np.outer later, not np.dot
         
         #grad_w2 = output x hidden
-        grad_w2 = np.add(grad_w2, (np.outer(delta_trans, z)))
-        
+        grad_w2 = np.add(grad_w2, (np.dot(delta_trans, z_trans)))
+       # grad_w2 = np.add(grad_w2, (np.dot(delta_trans, z)))
         #calculating [(1-z)*z * summation(delta*w2)] dot [x]
         #prodz = 1 x hidden
         
         prodzXsummation = (np.dot(delta, w2))*(z*(np.subtract(1.0, z)))
+        prodzXsummation_trans=prodzXsummation.reshape(prodzXsummation.size,1)
         #prodzXsummation_trans = np.transpose(prodzXsummation) 
         #^this also does nothing
-        
         #grad_w1 = hidden x input
-        
-        grad_w1 = np.add(grad_w1,(np.outer(prodzXsummation, x)))
+        x_trans_new=x.reshape(1,x.size)
+        grad_w1 = np.add(grad_w1,(np.dot(prodzXsummation_trans, x_trans_new)))
              
         #-----calculation for obj_value-----
         
@@ -370,7 +372,6 @@ def nnObjFunction(params, *args):
         
         obj_val += jsum
         
-        break
         
                  
     # Make sure you reshape the gradient matrices to a 1D array. for instance 
@@ -435,8 +436,8 @@ n_input = train_data.shape[1];
 n_class = 10;
 
 # initialize the weights into some random matrices
-initial_w1 = initializeWeights(n_input, n_hidden);
-initial_w2 = initializeWeights(n_hidden, n_class);
+initial_w1 = initializeWeights(n_input, n_hidden+1);
+initial_w2 = initializeWeights(n_hidden+1, n_class);
 
 # Combine the 2 weight matrices into single column vector
 initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
