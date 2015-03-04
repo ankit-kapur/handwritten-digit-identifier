@@ -142,9 +142,9 @@ def preprocess():
     
     #print("--------------------START-FeatureSelection------------------")
     # #Perform feature-selection on all 3 of the matrics
-    #train_data = doFeatureSelection(train_data)
-    #validation_data = doFeatureSelection(validation_data)
-    #test_data = doFeatureSelection(test_data)
+    train_data = doFeatureSelection(train_data)
+    validation_data = doFeatureSelection(validation_data)
+    test_data = doFeatureSelection(test_data)
     #print "train_data.shape", train_data.shape
     #print"train_label.shape", train_label.shape          
     #print"validation_data.shape", validation_data.shape
@@ -207,37 +207,11 @@ def initializeWeights(n_in,n_out):
     epsilon = sqrt(6) / sqrt(n_in + n_out + 1);
     W = (np.random.rand(n_out, n_in + 1)*2* epsilon) - epsilon;
     return W
-    
-    
-    
+
+    #Added by harsh the sigmoid function itself handles the input whether its scalar, a vector or a matrix
+    #no need for the for loop
 def sigmoid(z):
-    
-    """# Notice that z can be a scalar, a vector or a matrix
-    # return the sigmoid of input z"""
-    
-    if isinstance(z,np.ndarray):
-        if len(z.shape) is 1:
-            size = z.shape[0]
-            for i in range(size):
-                z[i] = calculateSigmoid(z[i])
-
-        if len(z.shape) is 2:
-            rows = z.shape[0]
-            cols = z.shape[1]
-            for i in range(rows):
-                for j in range(cols):
-                    z[i][j] = calculateSigmoid(z[i][j])
-    else:
-        z = calculateSigmoid(z)
-        
-    return z
-    
-def calculateSigmoid(x):
-    exponent = exp(-1.0*x)
-    result = 1.0 / (1.0 + exponent)
-    #print "x:", x, " exponent: ", exponent, " result:", result
-    return result
-
+    return (1 / (1 + np.exp(-1 * z)))    
 
 def nnObjFunction(params, *args):
     print("\n--------------------START - nnObjFunction------------------")
@@ -282,9 +256,11 @@ def nnObjFunction(params, *args):
     
     print "training_data,shape ", training_data.shape
     print "training_label.shape ", training_label.shape
-     
-    w1 = params[0:n_hidden+1 * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
-    w2 = params[(n_hidden+1 * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+    #print n_hidden
+    #print n_input
+    #Added by Harsh there was a mismatch in the number of hidden nodes.
+    w1 = params[0:(n_hidden+1) * (n_input + 1)].reshape( (n_hidden+1, (n_input + 1)))
+    w2 = params[((n_hidden+1) * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
     print "w1.shape", w1.shape
     print "w2.shape", w2.shape
     obj_val = 0  
@@ -310,20 +286,23 @@ def nnObjFunction(params, *args):
     for i in range(n_examples):
         #x = 1 x input
         x = training_data[i]
-        x = np.append(x, 1) # append bias = 1
+        x = np.append(x, 1) 
+        # append bias = 1
        # x_trans=x.reshape(x.size,1)
         #print "x_bias.shape", x_bias.shape
         #a = 1 x hidden
         #print "a.shape", a.shape
         #z = 1 x hidden
         z = sigmoid(np.dot(x, w1_trans))
-      #  z = np.append(z, 1)
+        #z = np.append(z, 1)
         #append bias = 1
         z_trans=z.reshape(1,z.size)
         #print "z_bias.shape", z_bias.shape
         #b = 1 x output
         #print "b.shape", b.shape
         #o = 1 x output
+        #print z.shape
+        #print w2_trans.shape
         o = sigmoid(np.dot(z_trans, w2_trans))
         #print "o.shape", o.shape
         #y = 1 x output
@@ -380,7 +359,8 @@ def nnObjFunction(params, *args):
     # obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     #obj_grad = np.array([])
   
-    
+    grad_w1 = grad_w1 / n_examples
+    grad_w2 = grad_w2 / n_examples
     obj_val = (obj_val/n_input)*-1  
     obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     print "obj_grad", obj_grad
@@ -436,8 +416,9 @@ n_input = train_data.shape[1];
 n_class = 10;
 
 # initialize the weights into some random matrices
+#Added by Harsh there was a mismatch in the number of hidden nodes.
 initial_w1 = initializeWeights(n_input, n_hidden+1);
-initial_w2 = initializeWeights(n_hidden+1, n_class);
+initial_w2 = initializeWeights(n_hidden, n_class);
 
 # Combine the 2 weight matrices into single column vector
 initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
