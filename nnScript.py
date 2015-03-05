@@ -19,7 +19,7 @@ import time
 # ============ Configurable parameters ============ #
 
 # Percentage of training-data that we'll use for validation
-validation_data_percentage = 80
+validation_data_percentage = 90
 
 # No. of nodes in the HIDDEN layer (not including bias unit)
 n_hidden = 50;
@@ -141,14 +141,13 @@ def preprocess():
     
     #print("--------------------START-FeatureSelection------------------")
     # #Perform feature-selection on all 3 of the matrics
-    train_data = doFeatureSelection(train_data)
-    validation_data = doFeatureSelection(validation_data)
-    test_data = doFeatureSelection(test_data)
-    #print "train_data.shape", train_data.shape
+    train_data, validation_data, test_data = doFeatureSelection(train_data, validation_data, test_data)
+    
+    print "train_data.shape", train_data.shape
     #print"train_label.shape", train_label.shape          
-    #print"validation_data.shape", validation_data.shape
+    print"validation_data.shape", validation_data.shape
     #print"validation_label.shape", validation_label.shape
-    #print"test_data.shape", test_data.shape
+    print"test_data.shape", test_data.shape
     #print"test_label.shape", test_label.shape
     #print("--------------------END-FeatureSelection------------------")
     
@@ -161,33 +160,49 @@ def generateLabelVector(x):
     vector[x] = 1
     return vector
 
-def doFeatureSelection(matrix):
-    # Also, convert each value to the double data-type here
-    n_rows = matrix.shape[0]
-    n_cols = matrix.shape[1]
+def doFeatureSelection(train_data, validation_data, test_data):
+
+    n_rows = train_data.shape[0]
+    n_cols = train_data.shape[1]
     is_first_run = True
-    newmatrix = matrix
-    if matrix.shape[0]!=0:
+    
+    new_train_data = train_data
+    new_validation_data = validation_data
+    new_test_data = test_data
+    
+    if train_data.shape[0]!=0:
         for i in range(n_cols):
             
             col_flag = False
-            temp = matrix[0][i]
+            temp = train_data[0][i]
             
             for j in range(1, n_rows):
-                if matrix[j][i] != temp:
+                if train_data[j][i] != temp:
                     col_flag = True
                     break
             if col_flag is True:
                 if is_first_run is True:
-                    newmatrix = np.array([matrix[:, i]]) # create matrix 
-                    newmatrix = np.reshape(newmatrix, (n_rows, -1))
+                    new_train_data = np.array([train_data[:, i]]) # create matrix 
+                    new_train_data = np.reshape(new_train_data, (n_rows, -1))
+                    
+                    new_validation_data = np.array([validation_data[:, i]]) # create matrix 
+                    new_validation_data = np.reshape(new_validation_data, (validation_data.shape[0], -1))
+                    
+                    new_test_data = np.array([test_data[:, i]]) # create matrix 
+                    new_test_data = np.reshape(new_test_data, (test_data.shape[0], -1))
                     
                     is_first_run = False;
                 else:
-                    tempmatrix = np.reshape(np.array([matrix[:, i].T]), (n_rows,-1))
-                    newmatrix = np.append(newmatrix, tempmatrix, 1)
+                    tempmatrix = np.reshape(np.array([train_data[:, i].T]), (train_data.shape[0],-1))
+                    new_train_data = np.append(new_train_data, tempmatrix, 1)
+                    
+                    tempmatrix = np.reshape(np.array([validation_data[:, i].T]), (validation_data.shape[0],-1))
+                    new_validation_data = np.append(new_validation_data, tempmatrix, 1)
+                    
+                    tempmatrix = np.reshape(np.array([test_data[:, i].T]), (test_data.shape[0],-1))
+                    new_test_data = np.append(new_test_data, tempmatrix, 1)
         
-    return newmatrix
+    return new_train_data, new_validation_data, new_test_data
 
 
 
@@ -500,7 +515,7 @@ print('\n Validation set Accuracy:' + str(100*np.mean((predicted_label == valida
 
 #find the accuracy on the TEST Dataset
 predicted_label = nnPredict(w1,w2,test_data)
-print('\n Test set Accuracy:' + + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
+print('\n Test set Accuracy:' + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
 
 
 
