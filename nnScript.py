@@ -451,8 +451,8 @@ with open(csv_file_path, 'w') as csvfile:
 
 
 # ====== Train Neural Network ====== #
-w1 = None
-w2 = None
+optimum_w1 = None
+optimum_w2 = None
 
 # ---- For different lambda values ---- #
 lambda_val = 0.0
@@ -526,15 +526,19 @@ while n_hidden <= n_hidden_upperlimit:
     if max_accuracy < training_set_accuracy:
         max_accuracy = training_set_accuracy
         optimum_n_hidden = n_hidden
+        optimum_w1 = w1
+        optimum_w2 = w2
     
     # Increase the n_hidden value
     n_hidden += n_hidden_increment
 
 print '\noptimum_n_hidden: ', optimum_n_hidden
 print 'optimum_lambda', optimum_lambda
+print 'optimum_w1', optimum_w1
+print 'optimum_w2', optimum_w2
 
 # Dump everything into the file
-pickle.dump([optimum_n_hidden, w1, w2, optimum_lambda], pickle_file)
+pickle.dump([optimum_n_hidden, optimum_w1, optimum_w2, optimum_lambda], pickle_file)
 
 # Close the pickle file
 pickle_file.close()
