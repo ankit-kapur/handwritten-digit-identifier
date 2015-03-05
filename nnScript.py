@@ -9,7 +9,7 @@ import time
 # ============ Configurable parameters ============ #
 
 # Percentage of training-data that we'll use for validation
-validation_data_percentage = 16.66667
+validation_data_percentage = 80
 #validation_data_percentage = 80
 
 # No. of nodes in the HIDDEN layer (not including bias unit)
@@ -307,14 +307,14 @@ def nnObjFunction(params, *args):
     
     obj_val = (obj_val/n_examples)*-1        
       
-    #---------------------------regularization----------------------------     
+    print("\n--------------------START-regularization------------------")     
     
     refact_w1_sum =np.sum(np.square(w1))
     refact_w2_sum =np.sum(np.square(w2))
     final_reg_term =(lambdaval)/(2*n_examples)*(refact_w1_sum+refact_w2_sum)
     obj_val=obj_val+final_reg_term  
     
-    #calculating the terns required for regularizing obj_grad
+    #calculating the terms required for regularizing obj_grad
     lambdaw1=w1*lambdaval
     grad_w1=(grad_w1+lambdaw1)
     grad_w1 =  grad_w1/n_examples
@@ -322,7 +322,7 @@ def nnObjFunction(params, *args):
     grad_w2=(grad_w2+lambdaw2)
     grad_w1 =  grad_w1/n_examples
     
-    #---------------------------/regularization----------------------------
+    print("\n--------------------END-regularization------------------")
     
     obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     
@@ -412,7 +412,7 @@ initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
 # ===== Train Neural Network using fmin_cg or minimize from scipy, optimize module. Check documentation for a working example
 
 args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
-opts = {'maxiter' : 200}    # Max-iterations: preferred value
+opts = {'maxiter' : 50}    # Max-iterations: preferred value
 
 nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
 
@@ -428,6 +428,8 @@ print "2: ", nn_params.x[(n_hidden * (n_input + 1)):].shape
 w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
 w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
 
+print "msg =", nn_params.message 
+print "flag =", nn_params.flag
 
 # We need to convert the label matrices into column vectors
 train_label = train_label.argmax(axis=1)
