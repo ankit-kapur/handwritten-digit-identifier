@@ -5,27 +5,35 @@ from scipy.optimize import minimize
 from scipy.io import loadmat
 from math import sqrt
 import time
-import pickle
-import csv
+
+# added nnObjFunction code
+# TODO matrix dimensions fix
+
+#commented featureSelection code
+#uncomment later
+
+#changed sigmoid
+#simpler now
+#check if works
 
 # ============ Configurable parameters ============ #
 
-# MAT file path
-mat_file_path = 'mnist_all.mat'
-# CSV file path
-csv_file_path = 'backprop_results.csv'
-
 # Percentage of training-data that we'll use for validation
-validation_data_percentage = 80
-#validation_data_percentage = 80
+validation_data_percentage = 10
 
-# Max number of iterations for minimization
-opts = {'maxiter' : 50}
+# No. of nodes in the HIDDEN layer (not including bias unit)
+n_hidden = 50;
+
+# Lambda (the regularization hyper-parameter)
+lambdaval = 0.3;
+
+run_count = 0
 
 def preprocess():
     
+    
     start_time = time.time()
-    print("\n--------------------START - preprocess------------------")
+    print("\n--------------------START-Preprocess------------------")
     """ Input:
      Although this function doesn't have any input, you are required to load
      the MNIST data set from file 'mnist_all.mat'.
@@ -49,13 +57,12 @@ def preprocess():
            with corresponding labels
      - convert original data set from integer to double by using double()
            function
-     - normalize the data to [0, 1]
+     - normalize the data to [0, 1]   ??????????????????
      - feature selection """
     
     
     # Load the MAT object as a Dictionary
-    #mat = loadmat('/home/harsh/canopy/ML/mnist_all.mat')
-    mat = loadmat(mat_file_path)
+    mat = loadmat('/home/harsh/canopy/ML/mnist_all.mat')
     is_first_run = True
 
     for i in range(0,10):
@@ -123,14 +130,29 @@ def preprocess():
          
         # Not the first run anymore
         is_first_run = False        
-   
-     
+                
+    print "train_data.shape", train_data.shape
+    print"train_label.shape", train_label.shape          
+    print"validation_data.shape", validation_data.shape
+    print"validation_label.shape", validation_label.shape
+    print"test_data.shape", test_data.shape
+    print"test_label.shape", test_label.shape
+    
+    
     #print("--------------------START-FeatureSelection------------------")
     # #Perform feature-selection on all 3 of the matrics
     train_data, validation_data, test_data = doFeatureSelection(train_data, validation_data, test_data)
-        
+    
+    print "train_data.shape", train_data.shape
+    #print"train_label.shape", train_label.shape          
+    print"validation_data.shape", validation_data.shape
+    #print"validation_label.shape", validation_label.shape
+    print"test_data.shape", test_data.shape
+    #print"test_label.shape", test_label.shape
+    #print("--------------------END-FeatureSelection------------------")
+    
     print("Time for preprocessing: ",time.time() - start_time)
-    print("--------------------END - preprocess------------------")
+    print("--------------------END-Preprocess------------------")
     return train_data, train_label, validation_data, validation_label, test_data, test_label
     
 def generateLabelVector(x):
@@ -206,9 +228,8 @@ def sigmoid(z):
     return (1 / (1 + np.exp(-1 * z)))    
 
 def nnObjFunction(params, *args):
-    #print("\n--------------------START - nnObjFunction------------------")
-    #obj_start_time = time.time()
-    
+    print("\n--------------------START - nnObjFunction------------------")
+    obj_start_time = time.time()
     """% nnObjFunction computes the value of objective function (negative log 
     %   likelihood error function with regularization) given the parameters 
     %   of Neural Networks, thetraining data, their corresponding training 
@@ -248,106 +269,155 @@ def nnObjFunction(params, *args):
     
     n_input, n_hidden, n_class, training_data, training_label, lambdaval = args
     
+    print "training_data,shape ", training_data.shape
+    print "training_label.shape ", training_label.shape
     #print n_hidden
     #print n_input
     #Added by Harsh there was a mismatch in the number of hidden nodes.
     w1 = params[0:(n_hidden) * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
     w2 = params[((n_hidden) * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+    print "w1.shape", w1.shape
+    print "w2.shape", w2.shape
     obj_val = 0  
     
     #Your code here
     
     w1_trans = np.transpose(w1)
     w2_trans = np.transpose(w2)
-
+    print "w1_trans.shape", w1_trans.shape
+    print "w2_trans.shape", w2_trans.shape
+    
     n_examples = training_data.shape[0]
+    print n_examples 
     
     #grad_w2 = output x hidden
     #grad_w1 = output x hidden 
     grad_w1 = np.zeros((n_hidden + 1, n_input + 1)) #initialize to 0  
     grad_w2 = np.zeros((n_class, n_hidden + 1)) #initialize to 0
+    print "grad_w1.shape",  grad_w1.shape
+    print "grad_w2.shape",  grad_w2.shape
     
     # === Add the (d+1)th bias attribute to training data as a column
-    ones = np.repeat(np.array([[1]]), n_examples, 0)
+    ones = np.repeat(np.array([[1]]), training_data.shape[0], 0)
     training_data = np.append(training_data, ones, 1)
-
-    x = training_data
-
-    z = sigmoid(np.dot(x, w1_trans))
-    
-    # Append bias (as a column vector [1,1,1...1]) to z
-    ones = np.repeat(np.array([[1]]), z.shape[0], 0)
-    z = np.append(z, ones, 1)
-    
-    o = sigmoid(np.dot(z, w2_trans))
-    y = training_label
-
-    #-----calculation for obj_grad-----
-    delta = np.subtract(o, y)
-
-    grad_w2 = np.add(grad_w2, (np.dot(delta.T, z)))
+     
+    for i in range(n_examples):
+        #x = 1 x input
         
-    prodzXsummation = (np.dot(delta, w2))*(z*(np.subtract(1.0, z)))
-
-    grad_w1 = np.add(grad_w1,(np.dot(prodzXsummation.T, x)))
-
-    j = y*(np.log(o)) + ((np.subtract(1.0, y))*(np.log(np.subtract(1.0, o))))
-    jsum = np.sum(j)
+        ###### DO THIS OUT OF FOR-LOOP
+        x = training_data[i]
+        #x = np.append(x, 1)
         
-    obj_val = np.sum(jsum)
+        # append bias = 1
+       # x_trans=x.reshape(x.size,1)
+        #print "x_bias.shape", x_bias.shape
+        #a = 1 x hidden
+        #print "a.shape", a.shape
+        #z = 1 x hidden
+        z = sigmoid(np.dot(x, w1_trans))
+        z = np.append(z, 1)
+        #append bias = 1
+        z_trans=z.reshape(1,z.size)
+        #print "z_bias.shape", z_bias.shape
+        #b = 1 x output
+        #print "b.shape", b.shape
+        #o = 1 x output
+        #print z.shape
+        #print w2_trans.shape
+        o = sigmoid(np.dot(z_trans, w2_trans))
+        #print "o.shape", o.shape
+        #y = 1 x output
+        y = training_label[i]
+        #print "y.shape", y.shape
+        #delta = 1 x output
+        
+        #-----calculation for obj_grad-----
+        delta = np.subtract(o, y)
+        #delta_trans = np.transpose(delta)
+        delta_trans=delta.reshape(delta.size,1)
+        #print "delta_trans.shape", delta_trans.shape
+        #^just for representation.
+        #transpose does nothing to a (1 x something) array
+        #so we have to use np.outer later, not np.dot
+        
+        #grad_w2 = output x hidden
+        grad_w2 = np.add(grad_w2, (np.dot(delta_trans, z_trans)))
+       # grad_w2 = np.add(grad_w2, (np.dot(delta_trans, z)))
+        #calculating [(1-z)*z * summation(delta*w2)] dot [x]
+        #prodz = 1 x hidden
+        
+        prodzXsummation = (np.dot(delta, w2))*(z*(np.subtract(1.0, z)))
+        prodzXsummation_trans=prodzXsummation.reshape(prodzXsummation.size,1)
+        #prodzXsummation_trans = np.transpose(prodzXsummation) 
+        #^this also does nothing
+        #grad_w1 = hidden x input
+        x_trans_new=x.reshape(1,x.size)
+        grad_w1 = np.add(grad_w1,(np.dot(prodzXsummation_trans, x_trans_new)))
+             
+        #-----calculation for obj_value-----
+        
+        #logo = np.log(o)
+        #minuso = np.subtract(1.0, o)
+        #logminuso = np.log(minuso)
+        #minusy = np.subtract(1.0, y)
+        #print "o.shape", o.shape
+        #print "y.shape", y.shape
+        #print "minusy.shape", minusy.shape
+        #print "logo.shape", logo.shape
+        #print "minuso.shape", minuso.shape
+        #print "logminuso.shape", logminuso.shape
+        
+        j = y*(np.log(o)) + ((np.subtract(1.0, y))*(np.log(np.subtract(1.0, o))))
+        jsum = np.sum(j)
+        
+        obj_val += jsum
+        
         
                  
     # Make sure you reshape the gradient matrices to a 1D array. for instance 
     # if your gradient matrices are grad_w1 and grad_w2
     # you would use code similar to the one below to create a flat array
     # obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
-    # obj_grad = np.array([])
+    #obj_grad = np.array([])
   
-    #grad_w1 = grad_w1 / n_examples
+    grad_w1 = grad_w1 / n_examples
     # Remove the last row from grad_w1 (to match the dimensions)
-    grad_w1=grad_w1[:-1,:]   
-    #grad_w2 = grad_w2 / n_examples   
+    grad_w1=grad_w1[:-1,:]
     
-    obj_val = (obj_val/n_examples)*-1        
-      
-    print("\n--------------------START-regularization------------------")     
+    grad_w2 = grad_w2 / n_examples
     
-    refact_w1_sum = np.sum(np.square(w1))
-    refact_w2_sum = np.sum(np.square(w2))
-    final_reg_term =(lambdaval/(2*n_examples))*(refact_w1_sum+refact_w2_sum)
-    obj_val=obj_val+final_reg_term
-    
-<<<<<<< HEAD
-    # Calculating the terms required for regularizing obj_grad
-    lambdaw1= w1*lambdaval
-    grad_w1 = (grad_w1+lambdaw1)/n_examples
-
-    lambdaw2= w2*lambdaval
-    grad_w2 = (grad_w2+lambdaw2)/n_examples
-=======
-    #calculating the terms required for regularizing obj_grad
+    #For Regularization in the Neural Network,calculating terms required for regularizing obj_val
+    refact_w1=np.square(w1)
+    refact_w1_sum =np.sum(refact_w1)
+    refact_w2=np.square(w2)
+    refact_w2_sum =np.sum(refact_w2)
+    final_reg_term =(lambdaval)/(2*n_examples)*(refact_w1_sum+refact_w2_sum)
+    #calculating the terns required for regularizing obj_grad
     lambdaw1=w1*lambdaval
     grad_w1=(grad_w1+lambdaw1)
-    grad_w1 =  grad_w1/n_examples
+    grad_w1 =  np.divide(grad_w1, n_examples)
     lambdaw2=w2*lambdaval
     grad_w2=(grad_w2+lambdaw2)
-    grad_w1 =  grad_w1/n_examples
->>>>>>> 802d9c04d17ddc3faa4b17a80ac962684095ded1
-    
-    print("\n--------------------END-regularization------------------")
-    
+    grad_w2 =  np.divide(grad_w2, n_examples)
+    ##end of regularization 
+    obj_val = (obj_val/n_examples)*-1
+    obj_val=obj_val+final_reg_term  
     obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
-    
-    #print "obj_grad", obj_grad
+    print "obj_grad", obj_grad
     print "obj_val",  obj_val
     
-    global run_count
+    global run_count 
     run_count += 1
+    print "run_count", run_count
     
-    #print("\n--------------------END - nnObjFunction------------------")
+    
+    
+    print("Time for nnObjFunction: ",time.time() - obj_start_time)
+    print("\n--------------------END - nnObjFunction------------------")
     
               
     return (obj_val,obj_grad)
+
 
 
 def nnPredict(w1,w2,data):
@@ -371,115 +441,60 @@ def nnPredict(w1,w2,data):
     labels = np.array([])
         
     w1_trans = np.transpose(w1)
+    w2_trans = np.transpose(w2)
     
-    # === Add the (d+1)th bias attribute to input layer data as a column
+    n_examples = data.shape[0]
+    
+    # === Add the (d+1)th bias attribute to training data as a column
     ones = np.repeat(np.array([[1]]), data.shape[0], 0)
     data = np.append(data, ones, 1)
-    x = data
-    
-    z = sigmoid(np.dot(x, w1_trans))
-    
-    # === Add the (d+1)th bias attribute to hidden layer data as a column
-    ones = np.repeat(np.array([[1]]), z.shape[0], 0)
-    z = np.append(z, ones, 1)
+        
+    for i in range(n_examples):
+        #x = 1 x input
+        x = data[i]
+        #x = np.append(x, 1)
+        
+        z = sigmoid(np.dot(x, w1_trans))
+        z = np.append(z, 1)         
+        
+        z_trans=z.reshape(1,z.size)
 
-    # Get the output
-    o = sigmoid(np.dot(z, w2.T))
+        # Get the output at the max
+        o = sigmoid(np.dot(z_trans, w2_trans))
 
-    # The prediction is the index of the output unit with the max o/p
-    labels = np.argmax(o, axis=1)
+        # The prediction is the index of the output unit with the max o/p
+        prediction = np.argmax(o)
+        labels = np.append(labels, prediction)
            
     return labels
+    
 
 
-def runCode(initialWeights, args, opts, validation_data,validation_label, test_data, test_label):
 
-    global run_count
-    run_count = 0
-    
-    train_data = args[3]
-    train_label = args[4]
-
-    # ===== Train Neural Network using fmin_cg or minimize from scipy, optimize module. Check documentation for a working example
-    nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args, method='CG', options=opts)
-    
-    # In case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
-    # and nnObjGradient. Check documentation for this function before you proceed.
-    # nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
-    
-    
-    #====== We now have the trained weights ======
-    # Reshape nnParams from 1D vector into w1 and w2 matrices
-    w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
-    w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
-    
-    # We need to convert the label matrices into column vectors
-    train_label = train_label.argmax(axis=1)
-    validation_label = validation_label.argmax(axis=1)
-    test_label = test_label.argmax(axis=1)
-    
-    
-    #====== Test the computed parameters ======
-    # Find the accuracy on the TRAINING Dataset
-    predicted_label = nnPredict(w1,w2,train_data)
-    training_set_accuracy = 100*np.mean((predicted_label == train_label).astype(float))
-    #print('\n   Training set accuracy ==> ' + str(training_set_accuracy) + '%')
-    
-    # Find the accuracy on the VALIDATION Dataset
-    predicted_label = nnPredict(w1,w2,validation_data)
-    validation_set_accuracy = 100*np.mean((predicted_label == validation_label).astype(float))
-    #print('   Validation set accuracy ==> ' + str(validation_set_accuracy) + '%')
-    
-    #find the accuracy on the TEST Dataset
-    predicted_label = nnPredict(w1,w2,test_data)
-    test_set_accuracy = 100*np.mean((predicted_label == test_label).astype(float))
-    #print('   Test set accuracy: ==> ' + str(test_set_accuracy) + '%')
-
-    return w1, w2, training_set_accuracy, validation_set_accuracy, test_set_accuracy
-    
-"""************** Neural Network Script Starts here ********************************"""
-
-# Pickle file: Open it for writing
-pickle_file = open('params.pickle','wb') 
-
+"""**************Neural Network Script Starts here********************************"""
 overall_start_time = time.time()
 train_data, train_label, validation_data,validation_label, test_data, test_label = preprocess();
 
+# ====== Train Neural Network ======
 run_count = 0
 
-# Set the number of nodes in the input layer (not including bias unit)
+# set the number of nodes in the input layer (not including bias unit)
 n_input = train_data.shape[1];
-
+				   
 # Number of nodes in the output layer are fixed as 10, because we've got 10 digits
 n_class = 10;
 
-
-# === Make CSV file === #
-with open(csv_file_path, 'w') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames = ['lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
-    writer.writeheader()
-
-
-# ====== Train Neural Network ====== #
-optimum_w1 = None
-optimum_w2 = None
-
-<<<<<<< HEAD
-# ---- For different lambda values ---- #
-lambda_val = 0.0
-lambda_increment = 0.05
-n_hidden = 50
-
-# Initialize the weights into some random matrices
+# initialize the weights into some random matrices
+#Added by Harsh there was a mismatch in the number of hidden nodes.
 initial_w1 = initializeWeights(n_input, n_hidden);
 initial_w2 = initializeWeights(n_hidden, n_class);
-    
+
 # Combine the 2 weight matrices into single column vector
 initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
-    
-max_accuracy = 0.0
-optimum_lambda = 0.0
-=======
+
+
+# ===== Train Neural Network using fmin_cg or minimize from scipy, optimize module. Check documentation for a working example
+
 args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
 opts = {'maxiter' : 50}    # Max-iterations: preferred value
 
@@ -490,6 +505,7 @@ nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='
 # nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
 
 
+#yolo
 #====== We now have the trained weights ======
 # Reshape nnParams from 1D vector into w1 and w2 matrices
 print "1: ", nn_params.x[0:n_hidden * (n_input + 1)].shape
@@ -497,8 +513,6 @@ print "2: ", nn_params.x[(n_hidden * (n_input + 1)):].shape
 w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
 w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
 
-print "msg =", nn_params.message 
-print "flag =", nn_params.flag
 
 # We need to convert the label matrices into column vectors
 train_label = train_label.argmax(axis=1)
@@ -509,85 +523,17 @@ test_label = test_label.argmax(axis=1)
 
 # Find the accuracy on the TRAINING Dataset
 predicted_label = nnPredict(w1,w2,train_data)
-print('\n   Training set accuracy ==> ' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
+print('\n Training set Accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
 
 # Find the accuracy on the VALIDATION Dataset
 predicted_label = nnPredict(w1,w2,validation_data)
-print('   Validation set accuracy ==> ' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
->>>>>>> 802d9c04d17ddc3faa4b17a80ac962684095ded1
+print('\n Validation set Accuracy:' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
 
-while lambda_val <= 1.0:
-    code_start_time = time.time()
-    print '\nLambda = %.2f' %lambda_val
-    
-    # Run the minimize function
-    args = (n_input, n_hidden, n_class, train_data, train_label, lambda_val)
-    w1, w2, training_set_accuracy, validation_set_accuracy, test_set_accuracy = runCode(initialWeights, args, opts, validation_data, validation_label, test_data, test_label)
-    
-    # Print stuff to CSV
-    time_taken = (time.time() - code_start_time)/60.0
-    with open(csv_file_path, 'a') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames = ['lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
-        writer.writerow({'lambda': lambda_val, 'n_hidden': n_hidden, 'training_set_accuracy': training_set_accuracy, 'validation_set_accuracy': validation_set_accuracy, 'test_set_accuracy': test_set_accuracy, 'runs': run_count, 'time': time_taken})
+#find the accuracy on the TEST Dataset
+predicted_label = nnPredict(w1,w2,test_data)
+print('\n Test set Accuracy:' + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
 
-    # Get the most optimum lambda value
-    if max_accuracy < training_set_accuracy:
-        max_accuracy = training_set_accuracy
-        optimum_lambda = lambda_val
-    
-    # Increase the lambda value
-    lambda_val += lambda_increment
-    
-    
-# ---- For different n_hidden values ---- #
-lambda_val = optimum_lambda
-n_hidden = 2
-n_hidden_increment = 5
-n_hidden_upperlimit = 300
 
-max_accuracy = 0.0
-optimum_n_hidden = 0.0
 
-while n_hidden <= n_hidden_upperlimit:
-    code_start_time = time.time()
-    print '\nn_hidden = %d' %n_hidden
-    
-    # Initialize the weights into some random matrices
-    initial_w1 = initializeWeights(n_input, n_hidden);
-    initial_w2 = initializeWeights(n_hidden, n_class);
-        
-    # Combine the 2 weight matrices into single column vector
-    initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
-    
-    # Run the minimize function
-    args = (n_input, n_hidden, n_class, train_data, train_label, lambda_val)
-    w1, w2, training_set_accuracy, validation_set_accuracy, test_set_accuracy = runCode(initialWeights, args, opts, validation_data, validation_label, test_data, test_label)
-    
-    # Print stuff to CSV
-    time_taken = (time.time() - code_start_time)/60.0
-    with open(csv_file_path, 'a') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames = ['lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
-        writer.writerow({'lambda': lambda_val, 'n_hidden': n_hidden, 'training_set_accuracy': training_set_accuracy, 'validation_set_accuracy': validation_set_accuracy, 'test_set_accuracy': test_set_accuracy, 'runs': run_count, 'time': time_taken})
-
-    # Get the most optimum lambda value
-    if max_accuracy < training_set_accuracy:
-        max_accuracy = training_set_accuracy
-        optimum_n_hidden = n_hidden
-        optimum_w1 = w1
-        optimum_w2 = w2
-    
-    # Increase the n_hidden value
-    n_hidden += n_hidden_increment
-
-print '\noptimum_n_hidden: ', optimum_n_hidden
-print 'optimum_lambda', optimum_lambda
-print 'optimum_w1', optimum_w1
-print 'optimum_w2', optimum_w2
-
-# Dump everything into the file
-pickle.dump([optimum_n_hidden, optimum_w1, optimum_w2, optimum_lambda], pickle_file)
-
-# Close the pickle file
-pickle_file.close()
-print("\nTotal time: ", (time.time() - overall_start_time)/60)
-print("\n-------------------- End of code ------------------")
+print("Total time: ",time.time() - overall_start_time)
+print("\n--------------------END of code------------------")
