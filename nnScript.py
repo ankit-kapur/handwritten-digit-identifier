@@ -19,10 +19,10 @@ import time
 # ============ Configurable parameters ============ #
 
 # Percentage of training-data that we'll use for validation
-validation_data_percentage = 90
+validation_data_percentage = 80
 
 # No. of nodes in the HIDDEN layer (not including bias unit)
-n_hidden = 50;
+n_hidden = 40;
 
 # Lambda (the regularization hyper-parameter)
 lambdaval = 0;
@@ -507,17 +507,17 @@ test_label = test_label.argmax(axis=1)
 
 # Find the accuracy on the TRAINING Dataset
 predicted_label = nnPredict(w1,w2,train_data)
-print('\n Training set Accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
+print('\n   Training set accuracy ==> ' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
 
 # Find the accuracy on the VALIDATION Dataset
 predicted_label = nnPredict(w1,w2,validation_data)
-print('\n Validation set Accuracy:' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
+print('\n   Validation set accuracy ==> ' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
 
 #find the accuracy on the TEST Dataset
 predicted_label = nnPredict(w1,w2,test_data)
-print('\n Test set Accuracy:' + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
+print('\n   Test set accuracy: ==> ' + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
 
 
 
 print("Total time: ",time.time() - overall_start_time)
-print("\n--------------------END of code------------------")
+print("\n--------------------END of code------------%%%%------")
