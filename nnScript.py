@@ -16,7 +16,7 @@ validation_data_percentage = 16.66667
 n_hidden = 30;
 
 # Lambda (the regularization hyper-parameter)
-lambdaval = 0;
+lambdaval = 0.3;
 
 # Misc global variables
 run_count = 0
@@ -53,7 +53,7 @@ def preprocess():
     
     
     # Load the MAT object as a Dictionary
-    mat = loadmat('/home/ankitkap/machinelearning/basecode/mnist_all.mat')
+    mat = loadmat('/home/harsh/canopy/ML/mnist_all.mat')
     is_first_run = True
 
     for i in range(0,10):
@@ -302,11 +302,30 @@ def nnObjFunction(params, *args):
   
     grad_w1 = grad_w1 / n_examples
     # Remove the last row from grad_w1 (to match the dimensions)
-    grad_w1=grad_w1[:-1,:]
+    grad_w1=grad_w1[:-1,:]   
+    grad_w2 = grad_w2 / n_examples   
     
-    grad_w2 = grad_w2 / n_examples
-    obj_val = (obj_val/n_examples)*-1
-    obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()), 0)
+    obj_val = (obj_val/n_examples)*-1        
+      
+    #---------------------------regularization----------------------------     
+    
+    refact_w1_sum =np.sum(np.square(w1))
+    refact_w2_sum =np.sum(np.square(w2))
+    final_reg_term =(lambdaval)/(2*n_examples)*(refact_w1_sum+refact_w2_sum)
+    obj_val=obj_val+final_reg_term  
+    
+    #calculating the terns required for regularizing obj_grad
+    lambdaw1=w1*lambdaval
+    grad_w1=(grad_w1+lambdaw1)
+    grad_w1 =  grad_w1/n_examples
+    lambdaw2=w2*lambdaval
+    grad_w2=(grad_w2+lambdaw2)
+    grad_w1 =  grad_w1/n_examples
+    
+    #---------------------------/regularization----------------------------
+    
+    obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
+    
     print "obj_grad", obj_grad
     print "obj_val",  obj_val
     
@@ -393,7 +412,7 @@ initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
 # ===== Train Neural Network using fmin_cg or minimize from scipy, optimize module. Check documentation for a working example
 
 args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
-opts = {'maxiter' : 80}    # Max-iterations: preferred value
+opts = {'maxiter' : 200}    # Max-iterations: preferred value
 
 nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
 
