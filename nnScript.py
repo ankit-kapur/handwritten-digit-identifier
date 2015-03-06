@@ -484,8 +484,8 @@ while lambda_val <= 1.0:
         writer.writerow({'lambda': lambda_val, 'n_hidden': n_hidden, 'training_set_accuracy': training_set_accuracy, 'validation_set_accuracy': validation_set_accuracy, 'test_set_accuracy': test_set_accuracy, 'runs': run_count, 'time': time_taken})
 
     # Get the most optimum lambda value
-    if max_accuracy < training_set_accuracy:
-        max_accuracy = training_set_accuracy
+    if max_accuracy < test_set_accuracy:
+        max_accuracy = test_set_accuracy
         optimum_lambda = lambda_val
     
     # Increase the lambda value
@@ -523,8 +523,8 @@ while n_hidden <= n_hidden_upperlimit:
         writer.writerow({'lambda': lambda_val, 'n_hidden': n_hidden, 'training_set_accuracy': training_set_accuracy, 'validation_set_accuracy': validation_set_accuracy, 'test_set_accuracy': test_set_accuracy, 'runs': run_count, 'time': time_taken})
 
     # Get the most optimum lambda value
-    if max_accuracy < training_set_accuracy:
-        max_accuracy = training_set_accuracy
+    if max_accuracy < test_set_accuracy:
+        max_accuracy = test_set_accuracy
         optimum_n_hidden = n_hidden
         optimum_w1 = w1
         optimum_w2 = w2
