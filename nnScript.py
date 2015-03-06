@@ -16,11 +16,11 @@ mat_file_path = 'mnist_all.mat'
 csv_file_path = 'backprop_results.csv'
 
 # Percentage of training-data that we'll use for validation
-validation_data_percentage = 80
+validation_data_percentage = 16.66667
 #validation_data_percentage = 80
 
 # Max number of iterations for minimization
-opts = {'maxiter' : 50}
+opts = {'maxiter' : 100}
 
 def preprocess():
     
@@ -310,31 +310,21 @@ def nnObjFunction(params, *args):
     
     obj_val = (obj_val/n_examples)*-1        
       
-    print("\n--------------------START-regularization------------------")     
+    #---------------------------regularization----------------------------     
     
     refact_w1_sum = np.sum(np.square(w1))
     refact_w2_sum = np.sum(np.square(w2))
     final_reg_term =(lambdaval/(2*n_examples))*(refact_w1_sum+refact_w2_sum)
     obj_val=obj_val+final_reg_term
     
-<<<<<<< HEAD
     # Calculating the terms required for regularizing obj_grad
     lambdaw1= w1*lambdaval
     grad_w1 = (grad_w1+lambdaw1)/n_examples
 
     lambdaw2= w2*lambdaval
     grad_w2 = (grad_w2+lambdaw2)/n_examples
-=======
-    #calculating the terms required for regularizing obj_grad
-    lambdaw1=w1*lambdaval
-    grad_w1=(grad_w1+lambdaw1)
-    grad_w1 =  grad_w1/n_examples
-    lambdaw2=w2*lambdaval
-    grad_w2=(grad_w2+lambdaw2)
-    grad_w1 =  grad_w1/n_examples
->>>>>>> 802d9c04d17ddc3faa4b17a80ac962684095ded1
     
-    print("\n--------------------END-regularization------------------")
+    #---------------------------/regularization----------------------------
     
     obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     
@@ -464,10 +454,9 @@ with open(csv_file_path, 'w') as csvfile:
 optimum_w1 = None
 optimum_w2 = None
 
-<<<<<<< HEAD
 # ---- For different lambda values ---- #
 lambda_val = 0.0
-lambda_increment = 0.05
+lambda_increment = 0.1
 n_hidden = 50
 
 # Initialize the weights into some random matrices
@@ -479,42 +468,6 @@ initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
     
 max_accuracy = 0.0
 optimum_lambda = 0.0
-=======
-args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
-opts = {'maxiter' : 50}    # Max-iterations: preferred value
-
-nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
-
-# In case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
-# and nnObjGradient. Check documentation for this function before you proceed.
-# nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
-
-
-#====== We now have the trained weights ======
-# Reshape nnParams from 1D vector into w1 and w2 matrices
-print "1: ", nn_params.x[0:n_hidden * (n_input + 1)].shape
-print "2: ", nn_params.x[(n_hidden * (n_input + 1)):].shape
-w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
-w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
-
-print "msg =", nn_params.message 
-print "flag =", nn_params.flag
-
-# We need to convert the label matrices into column vectors
-train_label = train_label.argmax(axis=1)
-validation_label = validation_label.argmax(axis=1)
-test_label = test_label.argmax(axis=1)
-#====== Test the computed parameters ======
-
-
-# Find the accuracy on the TRAINING Dataset
-predicted_label = nnPredict(w1,w2,train_data)
-print('\n   Training set accuracy ==> ' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
-
-# Find the accuracy on the VALIDATION Dataset
-predicted_label = nnPredict(w1,w2,validation_data)
-print('   Validation set accuracy ==> ' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
->>>>>>> 802d9c04d17ddc3faa4b17a80ac962684095ded1
 
 while lambda_val <= 1.0:
     code_start_time = time.time()
@@ -541,9 +494,9 @@ while lambda_val <= 1.0:
     
 # ---- For different n_hidden values ---- #
 lambda_val = optimum_lambda
-n_hidden = 2
-n_hidden_increment = 5
-n_hidden_upperlimit = 300
+n_hidden = 10
+n_hidden_increment = 10
+n_hidden_upperlimit = 200
 
 max_accuracy = 0.0
 optimum_n_hidden = 0.0
