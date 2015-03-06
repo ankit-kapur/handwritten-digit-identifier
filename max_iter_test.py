@@ -13,14 +13,11 @@ import csv
 # MAT file path
 mat_file_path = 'mnist_all.mat'
 # CSV file path
-csv_file_path = 'backprop_results.csv'
+csv_file_path = 'backprop_maxiter.csv'
 
 # Percentage of training-data that we'll use for validation
 validation_data_percentage = 16.66667
 #validation_data_percentage = 80
-
-# Max number of iterations for minimization
-opts = {'maxiter' : 50}
 
 def preprocess():
     
@@ -446,17 +443,21 @@ n_class = 10;
 
 # === Make CSV file === #
 with open(csv_file_path, 'w') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames = ['lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
+    writer = csv.DictWriter(csvfile, fieldnames = ['max_iter','lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
     writer.writeheader()
 
 
 # ====== Train Neural Network ====== #
-optimum_w1 = None
-optimum_w2 = None
+
 
 # ---- For different lambda values ---- #
-lambda_val = 0.0
-lambda_increment = 0.05
+# Max number of iterations for minimization
+max_iter = 10
+max_iter_increment = 10
+max_iter_limit = 100
+
+# Hyper parameters
+lambda_val = 1.0
 n_hidden = 50
 
 # Initialize the weights into some random matrices
@@ -471,75 +472,22 @@ optimum_lambda = 0.0
 
 while lambda_val <= 1.0:
     code_start_time = time.time()
-    print '\nLambda = %.2f' %lambda_val
+    print '\nmax_iter = %d' %max_iter
     
     # Run the minimize function
+    opts = {'maxiter' : max_iter}
     args = (n_input, n_hidden, n_class, train_data, train_label, lambda_val)
     w1, w2, training_set_accuracy, validation_set_accuracy, test_set_accuracy = runCode(initialWeights, args, opts, validation_data, validation_label, test_data, test_label)
     
     # Print stuff to CSV
     time_taken = (time.time() - code_start_time)/60.0
     with open(csv_file_path, 'a') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames = ['lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
-        writer.writerow({'lambda': lambda_val, 'n_hidden': n_hidden, 'training_set_accuracy': training_set_accuracy, 'validation_set_accuracy': validation_set_accuracy, 'test_set_accuracy': test_set_accuracy, 'runs': run_count, 'time': time_taken})
-
-    # Get the most optimum lambda value
-    if max_accuracy < training_set_accuracy:
-        max_accuracy = training_set_accuracy
-        optimum_lambda = lambda_val
+        writer = csv.DictWriter(csvfile, fieldnames = ['max_iter','lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
+        writer.writerow({'max_iter':max_iter,'lambda': lambda_val, 'n_hidden': n_hidden, 'training_set_accuracy': training_set_accuracy, 'validation_set_accuracy': validation_set_accuracy, 'test_set_accuracy': test_set_accuracy, 'runs': run_count, 'time': time_taken})
     
-    # Increase the lambda value
-    lambda_val += lambda_increment
+    # Increase the maxiter value
+    max_iter += max_iter_increment
     
-    
-# ---- For different n_hidden values ---- #
-lambda_val = optimum_lambda
-n_hidden = 2
-n_hidden_increment = 5
-n_hidden_upperlimit = 300
-
-max_accuracy = 0.0
-optimum_n_hidden = 0.0
-
-while n_hidden <= n_hidden_upperlimit:
-    code_start_time = time.time()
-    print '\nn_hidden = %d' %n_hidden
-    
-    # Initialize the weights into some random matrices
-    initial_w1 = initializeWeights(n_input, n_hidden);
-    initial_w2 = initializeWeights(n_hidden, n_class);
-        
-    # Combine the 2 weight matrices into single column vector
-    initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
-    
-    # Run the minimize function
-    args = (n_input, n_hidden, n_class, train_data, train_label, lambda_val)
-    w1, w2, training_set_accuracy, validation_set_accuracy, test_set_accuracy = runCode(initialWeights, args, opts, validation_data, validation_label, test_data, test_label)
-    
-    # Print stuff to CSV
-    time_taken = (time.time() - code_start_time)/60.0
-    with open(csv_file_path, 'a') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames = ['lambda','n_hidden','training_set_accuracy','validation_set_accuracy','test_set_accuracy','runs','time'])
-        writer.writerow({'lambda': lambda_val, 'n_hidden': n_hidden, 'training_set_accuracy': training_set_accuracy, 'validation_set_accuracy': validation_set_accuracy, 'test_set_accuracy': test_set_accuracy, 'runs': run_count, 'time': time_taken})
-
-    # Get the most optimum lambda value
-    if max_accuracy < training_set_accuracy:
-        max_accuracy = training_set_accuracy
-        optimum_n_hidden = n_hidden
-        optimum_w1 = w1
-        optimum_w2 = w2
-    
-    # Increase the n_hidden value
-    n_hidden += n_hidden_increment
-
-print '\noptimum_n_hidden: ', optimum_n_hidden
-print 'optimum_lambda', optimum_lambda
-print 'optimum_w1', optimum_w1
-print 'optimum_w2', optimum_w2
-
-# Dump everything into the file
-pickle.dump([optimum_n_hidden, optimum_w1, optimum_w2, optimum_lambda], pickle_file)
-
 # Close the pickle file
 pickle_file.close()
 print("\nTotal time: ", (time.time() - overall_start_time)/60)

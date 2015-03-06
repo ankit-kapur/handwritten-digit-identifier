@@ -20,7 +20,7 @@ validation_data_percentage = 16.66667
 #validation_data_percentage = 80
 
 # Max number of iterations for minimization
-opts = {'maxiter' : 100}
+opts = {'maxiter' : 50}
 
 def preprocess():
     
@@ -496,7 +496,7 @@ while lambda_val <= 1.0:
 lambda_val = optimum_lambda
 n_hidden = 10
 n_hidden_increment = 10
-n_hidden_upperlimit = 200
+n_hidden_upperlimit = 100
 
 max_accuracy = 0.0
 optimum_n_hidden = 0.0
